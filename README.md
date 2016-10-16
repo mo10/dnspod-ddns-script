@@ -13,3 +13,8 @@
       1234,fbcd1234bfbd34fd
       
    域名ID和记录ID获取请见 https://github.com/mo10/get-my-dnspod-id
+ 
+##添加定时任务
+
+    crontab -e
+    */5 * * * * python /path/to/q.0w0.pw.py &
