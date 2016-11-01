@@ -17,4 +17,4 @@
 ##添加定时任务
 
     crontab -e
-    */5 * * * * python /path/to/q.0w0.pw.py &
+    */5 * * * * python /path/to/dnspod.py &
