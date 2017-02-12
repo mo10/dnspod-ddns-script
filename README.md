@@ -7,7 +7,7 @@
 
   添加一个Token 记下ID和Token
 
-  打开ddns.py mytoken变量填写ID和Token 格式为:
+  打开ddns.py token变量填写ID与Token 格式为:
   
       id,token 
 
