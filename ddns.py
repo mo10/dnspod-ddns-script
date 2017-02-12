@@ -7,7 +7,7 @@ import sys,json,requests
 ###设置######################Config###
 #从服务器获取本地外网IP地址
 ip_api_url = "https://api.ipify.org"
-#服务器超时时间
+#服务器超时时间,单位(秒) 允许小数
 request_timeout=10
 #你的Dnspod Token
 #token = "123456,1234567890abcef1234567890abcdef"#例子
