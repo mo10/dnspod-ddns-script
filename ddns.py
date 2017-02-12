@@ -11,10 +11,10 @@ ip_api_url = "https://api.ipify.org"
 request_timeout=10
 #你的Dnspod Token
 #token = "123456,1234567890abcef1234567890abcdef"#例子
-token = "API Token ID,Token"
+token = "Token ID,Token"
 #域名
 #domain="google.com"#例子
-domain="0w0.pw"
+domain="Your.domain.com"
 #记录
 #record = "www"#例子
 #record = "@"#例子
