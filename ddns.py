@@ -1,70 +1,73 @@
 # -*- coding:utf-8 -*-
-import urllib,urllib2,json,sys,ssl
-reload(sys)
-sys.setdefaultencoding("utf-8")
-ssl._create_default_https_context = ssl._create_unverified_context
+#import urllib,urllib2,json,sys,ssl
+import sys,json,requests
+#reload(sys)
+#sys.setdefaultencoding("utf-8")
 
 ###设置######################Config###
 #从服务器获取本地外网IP地址
-url = "http://your.server.here/ip.php"
-#设置Dnspod账户
-mytoken = "API Token ID,Token"
-#域名ID
-domain_id = "your domain id here"
-#记录ID
-record_id = "your record id here"
+ip_api_url = "https://api.ipify.org"
+#服务器超时时间
+request_timeout=10
+#你的Dnspod Token
+#token = "123456,1234567890abcef1234567890abcdef"#例子
+token = "API Token ID,Token"
+#域名
+#domain="google.com"#例子
+domain="0w0.pw"
+#记录
+#record = "www"#例子
+#record = "@"#例子
+record = "@"
 ###设置######################Config###
-
-def getip():
-	req = urllib2.Request(url)
-	res_data = urllib2.urlopen(req)
-	return res_data.read()
-
-def dnspodapi(requrl,postdata):
-	data_urlencode = urllib.urlencode(postdata)
-	req = urllib2.Request(url = requrl,data =data_urlencode)
-	res_data = urllib2.urlopen(req)
-	return json.loads(res_data.read())
-
-#获取本机外网IP
-localip=getip()
-#获取记录IP
-data = {
-	'login_token':mytoken,
-	'domain_id':domain_id,
-	'record_id':record_id,
-	'format':'json'}
-code=dnspodapi("https://dnsapi.cn/Record.Info",data)
-#判断返回状态是否正常
-if (code['status']['code']!='1'):
-	print "Error:"+code['status']['code']
-	print code['status']['message']
-	exit(1)
-
-print "local_ip:	"+localip
-print "record_ip:	"+code['record']['value']
-
-#检查本地IP是否与记录IP不同
-if (code['record']['value']!=localip):
-	data = {
-                'login_token':mytoken,
-                'domain_id':domain_id,
-                'record_id':record_id,
-                'record_type':code['record']['record_type'],
-                'record_line':code['record']['record_line'],
-                'sub_domain':code['record']['sub_domain'],
-                'value':localip,
+class DnspodError(Exception):
+    def __init__(self, status, msg):
+        Exception.__init__(self)
+        self.status = status
+        self.msg = msg
+try:
+    #读取Dnspod记录
+    payload = {
+        'login_token':token,
+        'domain':domain,
+        'sub_domain':record,
+        'format':'json'
+        }
+    record_info = requests.post("https://dnsapi.cn/Record.List",data=payload,timeout=request_timeout).json()
+    #判断状态码
+    if (record_info['status']['code']!='1'):
+        #读取记录异常
+        raise DnspodError(record_info['status']['code'],record_info['status']['message'])
+    #遍历记录列表 查找A记录
+    for i in record_info['records']:
+        if(i['type'] == 'A'):
+            #获取本机IP
+            local_ip=requests.get(ip_api_url, timeout=request_timeout).text
+            print("domain id:%s,record id:%s,record ip:%s,local ip:%s"%(record_info['domain']['id'],i['id'],i['value'],local_ip))
+            #对比本机IP与记录中的IP 没区别就不需要更新记录
+            if(i['value'] == local_ip):
+                print("然而IP并没有变化")
+                sys.exit(0)
+            #更新记录
+            payload = {
+                'login_token':token,
+                'domain_id':record_info['domain']['id'],
+                'record_id':i['id'],
+                'record_type':i['type'],
+                'record_line_id':i['line_id'],
+                'sub_domain':record,
+                'value':local_ip,
                 'format':'json'
                 }
-	code= dnspodapi("https://dnsapi.cn/Record.Modify",data)
-	#判断返回状态是否正常
-	if (code['status']['code']!='1'):
-		print "Error:"+code['status']['code']
-		print code['status']['message']
-		exit(1)
-	print "record ip was updated to"+code['record']['value']
-	exit(0)
-else:
-	print "record ip is the latest!"
-	exit(0)
-
+            record_modify = requests.post("https://dnsapi.cn/Record.Modify",data=payload,timeout=request_timeout).json()
+            #判断状态码
+            if (record_modify['status']['code']!='1'):
+                #修改记录异常
+                raise DnspodError(record_modify['status']['code'],record_modify['status']['message'])
+            print("记录IP更新完了")
+except requests.exceptions.Timeout as e:
+    print("%s连接超时!"%(e.request.url))
+    exit(1)
+except DnspodError as e:
+    print("Dnspod错误:%s,%s"%(e.status,e.msg))
+    exit(1)
